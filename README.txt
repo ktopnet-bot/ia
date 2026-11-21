@@ -1,22 +1,9 @@
-ISOMETRIC SCANNER – Prototype web v0.2
+ISOMETRIC SCANNER — PROTOTYPE WEB v0.3
 
-OUVRIR
-1. Décompresser le ZIP.
-2. Ouvrir index.html dans Chrome, Edge ou Safari.
-3. Importer le PDF isométrique depuis l'appareil.
-4. Sélectionner un spool SP01 à SP22 pour afficher la page correspondante.
+Nouveautés : affichage PDF avec PDF.js, navigation entre pages, tracé manuel d’un rectangle de repérage pour le spool sélectionné, sauvegarde locale des zones (localStorage), export JSON.
 
-FONCTIONS INCLUSES
-- Interface responsive ordinateur / iPhone.
-- Import PDF local et visualisation de la page associée au spool.
-- Registre de 22 repères SP01 à SP22 issus du document AR327-23-06-IS-0005.
-- Tableau des longueurs de tubes relevées par page.
-- Calcul modifiable du poids théorique des tubes et de la surface extérieure acier avant isolation.
-- Export CSV des lignes de tubes.
+Utilisation : décompresser le ZIP, ouvrir index.html dans Safari/Chrome/Edge, importer le PDF, choisir un spool, cliquer « Définir la zone du spool » et tracer le rectangle sur le plan. Exporter les zones JSON pour les conserver ou les transférer.
 
-LIMITES IMPORTANTES
-- Prototype front-end : aucune base de données ni serveur.
-- Le navigateur ne détecte pas encore automatiquement les limites dessinées des spools.
-- Les longueurs OCR et les hypothèses dimensionnelles doivent être vérifiées.
-- Les accessoires ne sont pas calculés tant que les poids unitaires de catalogue et les affectations par spool ne sont pas renseignés.
-- Les résultats ne sont pas un MTO certifié.
+Connexion Internet requise pour charger PDF.js depuis cdnjs.
+
+Limites : rectangles MANUELS, pas de détection automatique des limites physiques. Les zones doivent être vérifiées sur le plan. Les 22 repères sont préchargés selon le relevé initial. Calculs de tubes indicatifs sur hypothèse SCH40 ; accessoires non inclus dans les totaux. Supports exclus ; peinture sur acier extérieur avant isolation. Pas de serveur ni base de données ; sauvegarde locale au navigateur courant.
