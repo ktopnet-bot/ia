@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10243a">
+<title>Isometric Scanner | Prototype 0.2</title>
+<style>
+:root{--navy:#10243a;--blue:#1769aa;--cyan:#dceefa;--bg:#f3f6fa;--line:#dce3eb;--muted:#66788a;--green:#16845b;--orange:#a85b13}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:#172536}
+header{background:var(--navy);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-weight:750;font-size:18px;letter-spacing:.2px}.brand small{display:block;font-size:11px;font-weight:500;opacity:.75;margin-top:3px}
+main{max-width:1450px;margin:auto;padding:18px}.project{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:22px;margin:0 0 5px}.sub{color:var(--muted);font-size:13px}
+.pill{display:inline-block;padding:5px 9px;border-radius:20px;background:#e6f4ed;color:#146b49;font-size:11px;font-weight:700}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.card,.panel{background:white;border:1px solid var(--line);border-radius:13px;box-shadow:0 2px 8px #10243a08}
+.metric{padding:14px}.metric span{display:block;color:var(--muted);font-size:12px}.metric strong{display:block;font-size:23px;margin-top:6px}
+.tabs{display:flex;gap:7px;overflow:auto;margin:16px 0}.tab{border:1px solid var(--line);background:white;border-radius:9px;padding:10px 14px;font-weight:650;color:#405267;white-space:nowrap;cursor:pointer}.tab.active{background:var(--navy);color:white;border-color:var(--navy)}
+.layout{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:14px}
+.panel{padding:15px;min-width:0}.panel h2{font-size:15px;margin:0 0 12px}
+.upload{border:1.5px dashed #9db2c7;background:#f8fbfe;border-radius:10px;padding:13px;margin-bottom:13px}
+input[type=file]{max-width:100%;font-size:12px}button,.btn{border:0;border-radius:8px;background:var(--blue);color:white;padding:9px 12px;font-weight:650;cursor:pointer}.btn.secondary{background:#eaf0f6;color:#23394e}
+.spool-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;max-height:420px;overflow:auto}
+.spool{background:#f2f6fa;color:#263b50;border:1px solid var(--line);padding:9px 4px;border-radius:8px;font-size:12px}.spool.active{background:var(--cyan);border-color:#3984bd;color:#064b7d}
+.viewer{background:#e9edf2;border-radius:9px;min-height:460px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+iframe{width:100%;height:620px;border:0;background:white}.empty{text-align:center;color:var(--muted);padding:28px}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f5f8fb;color:#45596d;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+input[type=number],input[type=text],select{width:100%;padding:8px;border:1px solid #cbd6e1;border-radius:7px;background:white;color:#172536}
+.status{font-size:11px;color:var(--orange);font-weight:700}.section{display:none}.section.active{display:block}
+.warning{border-left:3px solid #d58a2b;background:#fff8ed;padding:11px 13px;border-radius:7px;font-size:12px;line-height:1.5;margin:12px 0}
+.small{font-size:11px;color:var(--muted)}.right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:850px){main{padding:12px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.spool-list{grid-template-columns:repeat(4,minmax(0,1fr))}.viewer{min-height:380px}iframe{height:520px}}
+@media(max-width:480px){h1{font-size:19px}.metric strong{font-size:20px}.spool-list{grid-template-columns:repeat(4,minmax(0,1fr))}.panel{padding:12px}th,td{padding:8px 5px;font-size:11px}}
+</style>
+</head>
+<body>
+<header><div class="brand">ISOMETRIC SCANNER <small>Lecture des plans • Spools • MTO • Peinture</small></div><div class="right"><span class="pill">Prototype 0.2</span><span style="font-size:12px;opacity:.8">Web responsive</span></div></header>
+<main>
+<div class="project">
+ <div><h1>AR327 – Condensat BP</h1><div class="sub">Document AR327-23-06-IS-0005 • Révision 0 • Ligne 150-CS-31-153-2A3-HC</div></div>
+ <div class="right"><span class="pill">22 repères spool préchargés</span><button class="secondary btn" id="reset">Réinitialiser les données</button></div>
+</div>
+<div class="metrics">
+ <div class="card metric"><span>Spools identifiés sur le PDF</span><strong>22</strong></div>
+ <div class="card metric"><span>Longueur de tubes relevée*</span><strong id="totalLength">93,3 m</strong></div>
+ <div class="card metric"><span>Poids théorique des tubes*</span><strong id="totalWeight">2 615,7 kg</strong></div>
+ <div class="card metric"><span>Surface acier avant isolation*</span><strong id="totalArea">48,97 m²</strong></div>
+</div>
+<div class="tabs">
+ <button class="tab active" data-tab="drawing">Plan & spools</button>
+ <button class="tab" data-tab="materials">Tubes & calcul</button>
+ <button class="tab" data-tab="bom">Nomenclature accessoires</button>
+ <button class="tab" data-tab="method">Méthode & limites</button>
+</div>
+<section class="section active" id="drawing">
+ <div class="layout">
+  <div class="panel">
+   <h2>1. Importer le PDF isométrique</h2>
+   <div class="upload"><input id="pdfFile" type="file" accept="application/pdf"><div class="small" style="margin-top:7px">Le fichier reste dans votre navigateur. Aucun envoi serveur dans ce prototype.</div></div>
+   <h2>2. Repères spool</h2>
+   <div class="spool-list" id="spoolList"></div>
+   <div class="note">Choisir un spool affiche sa page du document. La zone exacte de chaque spool et l'association des articles doivent encore être validées visuellement.</div>
+  </div>
+  <div class="panel">
+   <div class="right" style="justify-content:space-between;margin-bottom:10px"><h2 id="viewerTitle">Visualiseur PDF – Page 3</h2><a id="openPdf" class="btn secondary" href="#" target="_blank" style="display:none;text-decoration:none">Ouvrir le PDF</a></div>
+   <div class="viewer" id="viewer"><div class="empty">Importez le PDF source pour afficher le dessin ici.<br><br>Sur iPhone, si l'aperçu intégré ne s'affiche pas, utilisez « Ouvrir le PDF ».</div></div>
+  </div>
+ </div>
+</section>
+<section class="section" id="materials">
+ <div class="panel">
+  <h2>Longueurs de tubes extraites des tableaux MATERIALS LIST</h2>
+  <div class="warning">Valeurs prélevées lors de la première lecture OCR du document. Confirmer chaque longueur sur le PDF avant validation. Les schedules utilisés pour l'exemple sont des hypothèses SCH 40, pas une donnée confirmée du cartouche.</div>
+  <div style="overflow:auto"><table id="tubeTable"><thead><tr><th>Page</th><th>DN</th><th>Longueur (m)</th><th>Ø ext. (mm)</th><th>Épaisseur (mm)</th><th>Poids calculé (kg)</th><th>Surface acier (m²)</th></tr></thead><tbody></tbody></table></div>
+  <div class="right" style="justify-content:flex-end;margin-top:12px"><button id="exportCsv">Exporter les tubes en CSV</button></div>
+  <div class="note">Formules : poids = π/4 × (De² − Di²) × L × ρ ; surface = π × De × L ; ρ acier carbone = 7 850 kg/m³. De et épaisseur sont modifiables.</div>
+ </div>
+</section>
+<section class="section" id="bom">
+ <div class="panel">
+  <h2>Bibliothèque de nomenclature – accessoires</h2>
+  <div class="warning">Le PDF contient des listes d'accessoires par feuille, mais leur association aux 22 spools n'est pas complètement explicitée. Les poids unitaires et surfaces d'accessoires ne sont donc pas préremplis. Saisir les données issues du catalogue technique approuvé.</div>
+  <div style="overflow:auto"><table><thead><tr><th>Famille lue dans le PDF</th><th>Éléments à gérer</th><th>Poids unitaire</th><th>Quantité</th><th>Spool</th></tr></thead><tbody id="accessoryRows"></tbody></table></div>
+ </div>
+</section>
+<section class="section" id="method">
+ <div class="panel">
+  <h2>Périmètre et règles de calcul</h2>
+  <table><tbody>
+   <tr><th>Surface de peinture</th><td>Surface extérieure de l'acier, avant isolation. Les 70 mm d'isolation HC ne sont pas inclus dans la surface calculée.</td></tr>
+   <tr><th>Poids</th><td>Tubes + accessoires uniquement. Supports de tuyauterie exclus.</td></tr>
+   <tr><th>Repères</th><td>SP01 à SP22 relevés sur les pages isométriques 3 à 7.</td></tr>
+   <tr><th>Document</th><td>AR327-23-06-IS-0005, Révision 0, 29/05/2024.</td></tr>
+   <tr><th>Limite du prototype</th><td>La reconnaissance automatique des traits de séparation, OCR des dimensions et association automatique composants/spools ne sont pas encore implémentés.</td></tr>
+  </tbody></table>
+  <div class="warning"><b>Avant émission d'un MTO :</b> confirmer les dimensions et schedules dans la classe 2A3, vérifier les longueurs OCR, saisir les poids catalogue des accessoires et valider la ventilation par spool. Les totaux de ce prototype ne sont pas des quantités de fabrication certifiées.</div>
+ </div>
+</section>
+<div class="small" style="text-align:center;padding:18px 0">Prototype de démonstration v0.2 • Interface française • Compatible écran mobile et ordinateur</div>
+</main>
+<script>
+const spools = Array.from({length:22},(_,i)=>({id:`SP${String(i+1).padStart(2,'0')}`,page:i<4?3:i<11?4:i===11?5:i<16?6:7}));
+const tubes = [
+ {page:3,dn:150,L:24.8,De:168.3,t:7.11},
+ {page:3,dn:20,L:.2,De:26.7,t:2.87},
+ {page:4,dn:150,L:30.3,De:168.3,t:7.11},
+ {page:4,dn:20,L:.2,De:26.7,t:2.87},
+ {page:5,dn:150,L:.6,De:168.3,t:7.11},
+ {page:6,dn:150,L:15.9,De:168.3,t:7.11},
+ {page:7,dn:150,L:20.9,De:168.3,t:7.11},
+ {page:7,dn:20,L:.4,De:26.7,t:2.87}
+];
+const rho=7850;
+let selected=spools[0], pdfUrl=null;
+function calc(x){let De=x.De/1000,t=x.t/1000,Di=De-2*t,L=Number(x.L);return {w:Math.PI/4*(De*De-Di*Di)*L*rho,a:Math.PI*De*L};}
+function fmt(n,d=2){return Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function renderSpools(){document.getElementById('spoolList').innerHTML=spools.map(x=>`<button class="spool ${x.id===selected.id?'active':''}" data-spool="${x.id}">${x.id}<br><span class="small">Page ${x.page}</span></button>`).join('');document.querySelectorAll('[data-spool]').forEach(b=>b.onclick=()=>{selected=spools.find(x=>x.id===b.dataset.spool);renderSpools();showPage();});}
+function showPage(){document.getElementById('viewerTitle').textContent=`${selected.id} – Page PDF ${selected.page}`;if(pdfUrl){document.getElementById('viewer').innerHTML=`<iframe title="Plan isométrique" src="${pdfUrl}#page=${selected.page}&view=FitH"></iframe>`;let a=document.getElementById('openPdf');a.href=pdfUrl+`#page=${selected.page}`;a.style.display='inline-block';}}
+function renderTubes(){let body=document.querySelector('#tubeTable tbody');body.innerHTML=tubes.map((x,i)=>{let c=calc(x);return `<tr><td>${x.page}</td><td>DN${x.dn}</td><td><input type="number" step=".1" min="0" value="${x.L}" data-i="${i}" data-k="L"></td><td><input type="number" step=".1" value="${x.De}" data-i="${i}" data-k="De"></td><td><input type="number" step=".01" value="${x.t}" data-i="${i}" data-k="t"></td><td>${fmt(c.w,2)}</td><td>${fmt(c.a,3)}</td></tr>`}).join('');body.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{tubes[+inp.dataset.i][inp.dataset.k]=+inp.value;renderTubes();renderMetrics();});}
+function renderMetrics(){let length=tubes.reduce((a,x)=>a+x.L,0),w=tubes.reduce((a,x)=>a+calc(x).w,0),area=tubes.reduce((a,x)=>a+calc(x).a,0);document.getElementById('totalLength').textContent=fmt(length,1)+' m';document.getElementById('totalWeight').textContent=fmt(w,1)+' kg';document.getElementById('totalArea').textContent=fmt(area,2)+' m²';}
+const accessoryFamilies=[["Fittings","Coudes 90° LR BW, cap, té égal, sockolet"],["Flanges","Brides WN, brides pleines"],["Valves","Robinet à passage direct, clapet"],["Fasteners","Tiges filetées, écrous, joints spiralés"]];
+document.getElementById('accessoryRows').innerHTML=accessoryFamilies.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><input type="number" placeholder="kg / unité"></td><td><input type="number" placeholder="Qté"></td><td><select><option>À affecter</option>${spools.map(s=>`<option>${s.id}</option>`).join('')}</select></td></tr>`).join('');
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');});
+document.getElementById('pdfFile').onchange=e=>{let f=e.target.files[0];if(!f)return;if(f.type!=='application/pdf'){alert('Veuillez choisir un fichier PDF.');return;}if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(f);showPage();};
+document.getElementById('exportCsv').onclick=()=>{let rows=[['Page','DN','Longueur_m','Diametre_exterieur_mm','Epaisseur_mm','Poids_kg','Surface_m2'],...tubes.map(x=>{let c=calc(x);return [x.page,x.dn,x.L,x.De,x.t,c.w.toFixed(3),c.a.toFixed(3)]})];let csv='\ufeff'+rows.map(r=>r.join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='tubes_AR327.csv';a.click();URL.revokeObjectURL(a.href);};
+document.getElementById('reset').onclick=()=>{location.reload();};
+renderSpools();renderTubes();renderMetrics();showPage();
+</script>
+</body></html>
