@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10243a">
-<title>Isometric Scanner | Prototype 0.3</title>
+<title>Isometric Scanner | Prototype 0.3.1</title>
 <style>
 :root{--navy:#10243a;--blue:#1769aa;--cyan:#dceefa;--bg:#f3f6fa;--line:#dce3eb;--muted:#66788a;--green:#16845b;--orange:#a85b13}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:#172536}
@@ -39,7 +39,7 @@ input[type=number],input[type=text],select{width:100%;padding:8px;border:1px sol
 </style>
 </head>
 <body>
-<header><div class="brand">ISOMETRIC SCANNER <small>Lecture des plans • Spools • MTO • Peinture</small></div><div class="right"><span class="pill">Prototype 0.3</span><span style="font-size:12px;opacity:.8">Web responsive</span></div></header>
+<header><div class="brand">ISOMETRIC SCANNER <small>Lecture des plans • Spools • MTO • Peinture</small></div><div class="right"><span class="pill">Prototype 0.3.1</span><span style="font-size:12px;opacity:.8">Web responsive</span></div></header>
 <main>
 <div class="project">
  <div><h1>AR327 – Condensat BP</h1><div class="sub">Document AR327-23-06-IS-0005 • Révision 0 • Ligne 150-CS-31-153-2A3-HC</div></div>
@@ -101,7 +101,7 @@ input[type=number],input[type=text],select{width:100%;padding:8px;border:1px sol
   <div class="warning"><b>Avant émission d'un MTO :</b> confirmer les dimensions et schedules dans la classe 2A3, vérifier les longueurs OCR, saisir les poids catalogue des accessoires et valider la ventilation par spool. Les totaux de ce prototype ne sont pas des quantités de fabrication certifiées.</div>
  </div>
 </section>
-<div class="small" style="text-align:center;padding:18px 0">Prototype de démonstration v0.3 • Interface française • Compatible écran mobile et ordinateur</div>
+<div class="small" style="text-align:center;padding:18px 0">Prototype de démonstration v0.3.1 • Interface française • Compatible écran mobile et ordinateur</div>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -147,7 +147,28 @@ function renderMetrics(){let length=tubes.reduce((a,x)=>a+x.L,0),w=tubes.reduce(
 const accessoryFamilies=[["Fittings","Coudes 90° LR BW, cap, té égal, sockolet"],["Flanges","Brides WN, brides pleines"],["Valves","Robinet à passage direct, clapet"],["Fasteners","Tiges filetées, écrous, joints spiralés"]];
 document.getElementById('accessoryRows').innerHTML=accessoryFamilies.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><input type="number" placeholder="kg / unité"></td><td><input type="number" placeholder="Qté"></td><td><select><option>À affecter</option>${spools.map(s=>`<option>${s.id}</option>`).join('')}</select></td></tr>`).join('');
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');});
-document.getElementById('pdfFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;if(f.type!=='application/pdf'){alert('Veuillez choisir un fichier PDF.');return;}if(!window.pdfjsLib){alert('PDF.js ne s’est pas chargé. Vérifiez votre connexion Internet et rechargez la page.');return;}if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(f);try{pdfDoc=await pdfjsLib.getDocument({url:pdfUrl}).promise;await showPage();}catch(err){console.error(err);alert('Impossible de lire ce PDF dans le navigateur.');}};
+document.getElementById('pdfFile').onchange=async e=>{
+ const f=e.target.files && e.target.files[0]; if(!f)return;
+ if(f.type!=='application/pdf' && !f.name.toLowerCase().endsWith('.pdf')){alert('Veuillez choisir un fichier PDF.');return;}
+ if(!window.pdfjsLib){alert('La bibliothèque PDF.js ne s’est pas chargée. Vérifiez la connexion Internet, puis rechargez la page.');return;}
+ try{
+  const buffer=await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(reader.result);
+   reader.onerror=()=>reject(new Error('Safari n’a pas réussi à lire le fichier sélectionné.'));
+   reader.readAsArrayBuffer(f);
+  });
+  if(pdfUrl)URL.revokeObjectURL(pdfUrl);
+  pdfUrl=URL.createObjectURL(f);
+  const bytes=new Uint8Array(buffer);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes, useSystemFonts:true, isEvalSupported:false}).promise;
+  await showPage();
+ }catch(err){
+  console.error('PDF load error:',err);
+  const detail=(err && err.message)?err.message:String(err);
+  alert('Lecture PDF impossible : '+detail+'\\n\\nVérifiez que le fichier est bien un PDF valide et réessayez.');
+ }
+};
 document.getElementById('drawZone').onclick=()=>{if(!pdfDoc){alert('Importez d’abord le PDF.');return;}drawing=!drawing;document.getElementById('drawZone').textContent=drawing?'Annuler le tracé':'Définir la zone du spool';document.getElementById('zoneCanvas')?.classList.toggle('locked',!drawing);};
 document.getElementById('clearZone').onclick=()=>{delete zones[selected.id];saveZones();drawSavedZone();updateZoneStatus();};
 document.getElementById('prevPage').onclick=()=>{if(pdfDoc&&currentPage>1){selected={...selected,page:currentPage-1};showPage();}};
