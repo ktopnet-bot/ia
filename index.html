@@ -68,7 +68,19 @@ input[type=number],input[type=text],select{width:100%;padding:8px;border:1px sol
   </div>
   <div class="panel">
    <div class="right" style="justify-content:space-between;margin-bottom:10px"><h2 id="viewerTitle">Visualiseur PDF – Page 3</h2><a id="openPdf" class="btn secondary" href="#" target="_blank" style="display:none;text-decoration:none">Ouvrir le PDF</a></div>
-   <div class="viewer" id="viewer"><div class="empty">Importez le PDF source pour afficher le dessin ici.<br><br>Sur iPhone, si l'aperçu intégré ne s'affiche pas, utilisez « Ouvrir le PDF ».</div></div>
+   <div class="right" style="justify-content:space-between;margin:0 0 8px">
+    <div class="right">
+     <button class="btn secondary" id="prevPage" type="button">← Page</button>
+     <span class="small" id="pageCounter">Page — / —</span>
+     <button class="btn secondary" id="nextPage" type="button">Page →</button>
+    </div>
+    <div class="right">
+     <button id="drawZone" type="button">Définir la zone du spool</button>
+     <button class="btn secondary" id="clearZone" type="button">Effacer la zone</button>
+    </div>
+   </div>
+   <div class="viewer" id="viewer"><div class="empty">Importez le PDF source pour afficher le dessin ici.<br><br>Sur iPhone, si l'aperçu intégré ne s'affiche pas, utilisez « Ouvrir le PDF ».</div>\n   <div class="note" id="zoneStatus">Aucune zone enregistrée. Les zones sont des propositions manuelles à vérifier sur le plan.</div>
+   <div class="right" style="justify-content:flex-end;margin-top:8px"><button class="btn secondary" id="exportZones" type="button">Exporter les zones (JSON)</button></div></div>
   </div>
  </div>
 </section>
@@ -126,14 +138,14 @@ function fmt(n,d=2){return Number(n).toLocaleString('fr-FR',{minimumFractionDigi
 function renderSpools(){document.getElementById('spoolList').innerHTML=spools.map(x=>`<button class="spool ${x.id===selected.id?'active':''}" data-spool="${x.id}">${x.id}<br><span class="small">Page ${x.page}</span></button>`).join('');document.querySelectorAll('[data-spool]').forEach(b=>b.onclick=()=>{selected=spools.find(x=>x.id===b.dataset.spool);renderSpools();showPage();});}
 async function showPage(){
  currentPage=selected.page;document.getElementById('viewerTitle').textContent=`${selected.id} – Page PDF ${currentPage}`;
- document.getElementById('pageCounter').textContent=pdfDoc?`Page ${currentPage} / ${pdfDoc.numPages}`:'Page — / —';if(!pdfDoc)return;
+ const counter=document.getElementById('pageCounter'); if(counter) counter.textContent=pdfDoc?`Page ${currentPage} / ${pdfDoc.numPages}`:'Page — / —';if(!pdfDoc)return;
  const page=await pdfDoc.getPage(currentPage),vp=page.getViewport({scale:1.35}),viewer=document.getElementById('viewer');
  viewer.innerHTML='<div id="pdfStage"><canvas id="pdfCanvas"></canvas><canvas id="zoneCanvas"></canvas></div>';
  const canvas=document.getElementById('pdfCanvas'),ctx=canvas.getContext('2d');canvas.width=Math.floor(vp.width);canvas.height=Math.floor(vp.height);
  const overlay=document.getElementById('zoneCanvas');overlay.width=canvas.width;overlay.height=canvas.height;await page.render({canvasContext:ctx,viewport:vp}).promise;
- drawSavedZone();overlay.classList.toggle('locked',!drawing);overlay.onpointerdown=startZone;overlay.onpointermove=moveZone;overlay.onpointerup=endZone;overlay.onpointercancel=endZone;
+ drawSavedZone();if(overlay) overlay.classList.toggle('locked',!drawing);overlay.onpointerdown=startZone;overlay.onpointermove=moveZone;overlay.onpointerup=endZone;overlay.onpointercancel=endZone;
  document.getElementById('prevPage').disabled=currentPage<=1;document.getElementById('nextPage').disabled=currentPage>=pdfDoc.numPages;
- document.getElementById('drawZone').textContent=drawing?'Annuler le tracé':'Définir la zone du spool';updateZoneStatus();let a=document.getElementById('openPdf');a.href=pdfUrl+`#page=${currentPage}`;a.style.display='inline-block';
+ const drawBtn=document.getElementById('drawZone'); if(drawBtn) drawBtn.textContent=drawing?'Annuler le tracé':'Définir la zone du spool';updateZoneStatus();let a=document.getElementById('openPdf');a.href=pdfUrl+`#page=${currentPage}`;a.style.display='inline-block';
 }
 function saveZones(){try{localStorage.setItem(zoneStoreKey,JSON.stringify(zones));}catch(e){}}
 function drawSavedZone(temp=null){const c=document.getElementById('zoneCanvas');if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const z=zones[selected.id];if(z&&z.page===currentPage){ctx.fillStyle='rgba(22,132,91,.16)';ctx.strokeStyle='#16845b';ctx.lineWidth=4;ctx.fillRect(z.x*c.width,z.y*c.height,z.w*c.width,z.h*c.height);ctx.strokeRect(z.x*c.width,z.y*c.height,z.w*c.width,z.h*c.height);}if(temp){ctx.fillStyle='rgba(23,105,170,.16)';ctx.strokeStyle='#1769aa';ctx.lineWidth=3;ctx.setLineDash([8,5]);ctx.fillRect(temp.x,temp.y,temp.w,temp.h);ctx.strokeRect(temp.x,temp.y,temp.w,temp.h);ctx.setLineDash([]);}}
@@ -141,7 +153,7 @@ function pointerPos(e){const c=document.getElementById('zoneCanvas'),r=c.getBoun
 function startZone(e){if(!drawing)return;e.currentTarget.setPointerCapture(e.pointerId);dragStart=pointerPos(e);}
 function moveZone(e){if(!drawing||!dragStart)return;const p=pointerPos(e);drawSavedZone({x:Math.min(p.x,dragStart.x),y:Math.min(p.y,dragStart.y),w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)});}
 function endZone(e){if(!drawing||!dragStart)return;const p=pointerPos(e),c=document.getElementById('zoneCanvas'),x=Math.min(p.x,dragStart.x),y=Math.min(p.y,dragStart.y),w=Math.abs(p.x-dragStart.x),h=Math.abs(p.y-dragStart.y);dragStart=null;if(w<12||h<12){drawSavedZone();return;}zones[selected.id]={page:currentPage,x:x/c.width,y:y/c.height,w:w/c.width,h:h/c.height,validated:false};saveZones();drawing=false;drawSavedZone();document.getElementById('drawZone').textContent='Définir la zone du spool';updateZoneStatus();}
-function updateZoneStatus(){const z=zones[selected.id];document.getElementById('zoneStatus').textContent=z?`${selected.id} : zone enregistrée sur la page ${z.page} (rectangle manuel, à valider).`:`${selected.id} : aucune zone enregistrée.`;}
+function updateZoneStatus(){const z=zones[selected.id];const status=document.getElementById('zoneStatus'); if(status) status.textContent=z?`${selected.id} : zone enregistrée sur la page ${z.page} (rectangle manuel, à valider).`:`${selected.id} : aucune zone enregistrée.`;}
 function renderTubes(){let body=document.querySelector('#tubeTable tbody');body.innerHTML=tubes.map((x,i)=>{let c=calc(x);return `<tr><td>${x.page}</td><td>DN${x.dn}</td><td><input type="number" step=".1" min="0" value="${x.L}" data-i="${i}" data-k="L"></td><td><input type="number" step=".1" value="${x.De}" data-i="${i}" data-k="De"></td><td><input type="number" step=".01" value="${x.t}" data-i="${i}" data-k="t"></td><td>${fmt(c.w,2)}</td><td>${fmt(c.a,3)}</td></tr>`}).join('');body.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{tubes[+inp.dataset.i][inp.dataset.k]=+inp.value;renderTubes();renderMetrics();});}
 function renderMetrics(){let length=tubes.reduce((a,x)=>a+x.L,0),w=tubes.reduce((a,x)=>a+calc(x).w,0),area=tubes.reduce((a,x)=>a+calc(x).a,0);document.getElementById('totalLength').textContent=fmt(length,1)+' m';document.getElementById('totalWeight').textContent=fmt(w,1)+' kg';document.getElementById('totalArea').textContent=fmt(area,2)+' m²';}
 const accessoryFamilies=[["Fittings","Coudes 90° LR BW, cap, té égal, sockolet"],["Flanges","Brides WN, brides pleines"],["Valves","Robinet à passage direct, clapet"],["Fasteners","Tiges filetées, écrous, joints spiralés"]];
@@ -169,11 +181,11 @@ document.getElementById('pdfFile').onchange=async e=>{
   alert('Lecture PDF impossible : '+detail+'\\n\\nVérifiez que le fichier est bien un PDF valide et réessayez.');
  }
 };
-document.getElementById('drawZone').onclick=()=>{if(!pdfDoc){alert('Importez d’abord le PDF.');return;}drawing=!drawing;document.getElementById('drawZone').textContent=drawing?'Annuler le tracé':'Définir la zone du spool';document.getElementById('zoneCanvas')?.classList.toggle('locked',!drawing);};
-document.getElementById('clearZone').onclick=()=>{delete zones[selected.id];saveZones();drawSavedZone();updateZoneStatus();};
-document.getElementById('prevPage').onclick=()=>{if(pdfDoc&&currentPage>1){selected={...selected,page:currentPage-1};showPage();}};
-document.getElementById('nextPage').onclick=()=>{if(pdfDoc&&currentPage<pdfDoc.numPages){selected={...selected,page:currentPage+1};showPage();}};
-document.getElementById('exportZones').onclick=()=>{const data={document:'AR327-23-06-IS-0005 Rev.0',zones,notice:'Rectangles manuels de repérage uniquement ; ils ne constituent pas des limites de spool validées.'};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='zones_spools_AR327.json';a.click();URL.revokeObjectURL(a.href);};
+const drawControl=document.getElementById('drawZone'); if(drawControl) drawControl.onclick=()=>{if(!pdfDoc){alert('Importez d’abord le PDF.');return;}drawing=!drawing;const drawBtn=document.getElementById('drawZone'); if(drawBtn) drawBtn.textContent=drawing?'Annuler le tracé':'Définir la zone du spool';document.getElementById('zoneCanvas')?.classList.toggle('locked',!drawing);};
+const clearControl=document.getElementById('clearZone'); if(clearControl) clearControl.onclick=()=>{delete zones[selected.id];saveZones();drawSavedZone();updateZoneStatus();};
+const prevControl=document.getElementById('prevPage'); if(prevControl) prevControl.onclick=()=>{if(pdfDoc&&currentPage>1){selected={...selected,page:currentPage-1};showPage();}};
+const nextControl=document.getElementById('nextPage'); if(nextControl) nextControl.onclick=()=>{if(pdfDoc&&currentPage<pdfDoc.numPages){selected={...selected,page:currentPage+1};showPage();}};
+const exportControl=document.getElementById('exportZones'); if(exportControl) exportControl.onclick=()=>{const data={document:'AR327-23-06-IS-0005 Rev.0',zones,notice:'Rectangles manuels de repérage uniquement ; ils ne constituent pas des limites de spool validées.'};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='zones_spools_AR327.json';a.click();URL.revokeObjectURL(a.href);};
 document.getElementById('exportCsv').onclick=()=>{let rows=[['Page','DN','Longueur_m','Diametre_exterieur_mm','Epaisseur_mm','Poids_kg','Surface_m2'],...tubes.map(x=>{let c=calc(x);return [x.page,x.dn,x.L,x.De,x.t,c.w.toFixed(3),c.a.toFixed(3)]})];let csv='\ufeff'+rows.map(r=>r.join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='tubes_AR327.csv';a.click();URL.revokeObjectURL(a.href);};
 document.getElementById('reset').onclick=()=>{location.reload();};
 renderSpools();renderTubes();renderMetrics();showPage();

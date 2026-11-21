@@ -14,3 +14,9 @@ CORRECTIF v0.3.1 (iPhone / Safari)
 - Évite le chargement direct du fichier local via une URL blob, qui peut échouer selon Safari.
 - En cas d'échec, affiche désormais le détail de l'erreur au lieu d'un message générique.
 - PDF.js reste chargé depuis CDN : une connexion Internet est nécessaire.
+
+
+CORRECTIF v0.3.2
+- Ajout explicite des contrôles de navigation PDF manquants (pageCounter, précédent/suivant).
+- Protection des accès aux éléments d'interface facultatifs afin qu'une absence de contrôle ne bloque plus le chargement du PDF.
+- Le message d'erreur précédent correspondait à un élément HTML manquant, et non à une preuve de PDF endommagé.
